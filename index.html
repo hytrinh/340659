@@ -28,7 +28,7 @@
       cursor: pointer;
       padding: 5px;
     }
-    input[type="text"] {
+    input[type="text"], input[type="password"] {
       width: 200px;
       padding: 8px;
       margin-bottom: 10px;
@@ -37,7 +37,7 @@
     }
     button {
       padding: 8px 16px;
-      margin-right: 10px;
+      margin: 5px;
       background-color: #4CAF50;
       color: white;
       border: none;
@@ -50,121 +50,176 @@
   </style>
 </head>
 <body>
-  <h1>2025 购买材料</h1>
+  <!-- Login Form -->
+  <div id="loginForm">
+    <h2>🔒 请输入姓名和密码</h2>
+    <input type="text" id="username" placeholder="姓名" required><br>
+    <input type="password" id="password" placeholder="密码" required><br>
+    <button onclick="checkLogin()">Đăng nhập</button>
+  </div>
 
-  <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Tìm kiếm...">
+  <!-- Main Content -->
+  <div id="mainContent" style="display:none">
+    <h1>2025 购买材料</h1>
 
-  <table id="materialsTable">
-    <thead>
-      <tr>
-        <th>月</th>
-        <th>单号</th>
-        <th>日期购买</th>
-        <th>到采购时间</th>
-        <th>请购单号</th>
-        <th>名称材料</th>
-        <th>数量</th>
-        <th>人上单</th>
-        <th>原因购买状况</th>
-        <th>天数回来</th>
-        <th>日期货物</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody>
-    </tbody>
-  </table>
+    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Tìm kiếm...">
 
-  <br>
-  <button onclick="addRow()">Thêm dòng</button>
-  <button onclick="saveData()">Lưu dữ liệu</button>
+    <table id="materialsTable">
+      <thead>
+        <tr>
+          <th>月</th>
+          <th>单号</th>
+          <th>日期购买</th>
+          <th>到采购时间</th>
+          <th>请购单号</th>
+          <th>名称材料</th>
+          <th>数量</th>
+          <th>人上单</th>
+          <th>原因购买状况</th>
+          <th>天数回来</th>
+          <th>日期货物</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <br>
+    <button onclick="secureAction(addRow)">Thêm dòng</button>
+    <button onclick="secureAction(saveData)">Lưu dữ liệu</button>
+    <button onclick="logout()" style="background-color: gray;">Đăng xuất</button>
+  </div>
 
   <script>
-    var isEditable = true;
+    const loginPassword = "ht1998";
+    const editPassword = "aa879094";
+    const webhookURL = "https://script.google.com/macros/s/AKfycbz3IrtQ7ZmqXXW2w19vfoRh4jhGGOp-hfmWXB_vf2X9WjsYooqfpuNGsPjGJwCSZ7S7/exec";
+
+    let currentUser = "";
+    let hasEditPermission = false;
+
+    function checkLogin() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!username) return alert("Vui lòng nhập tên");
+      if (password === loginPassword) {
+        currentUser = username;
+        localStorage.setItem("loggedUser", username);
+        sendToWebhook({ user: username, time: new Date().toLocaleString() });
+        showMain();
+      } else {
+        alert("Sai mật khẩu đăng nhập!");
+      }
+    }
+
+    function showMain() {
+      document.getElementById("loginForm").style.display = "none";
+      document.getElementById("mainContent").style.display = "block";
+      loadData();
+      setInterval(() => {
+        const rows = document.querySelectorAll("#materialsTable tbody tr");
+        rows.forEach(row => calculateDays(row));
+      }, 5000);
+    }
+
+    function logout() {
+      localStorage.removeItem("loggedUser");
+      location.reload();
+    }
+
+    function secureAction(action) {
+      const input = prompt("🔒 Nhập mật khẩu chỉnh sửa:");
+      if (input === editPassword) {
+        hasEditPermission = true;
+        action();
+      } else {
+        alert("Sai mật khẩu chỉnh sửa!");
+        sendToWebhook({ user: currentUser, time: new Date().toLocaleString(), action: "Cố gắng chỉnh sửa sai mật khẩu" });
+      }
+    }
+
+    function sendToWebhook(data) {
+      fetch(webhookURL, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" }
+      });
+    }
 
     function addRow() {
-      var table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
-      var newRow = table.insertRow(table.rows.length);
-
-      for (var i = 0; i < 11; i++) {
-        var cell = newRow.insertCell(i);
-        var input = document.createElement("input");
+      const table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
+      const newRow = table.insertRow();
+      for (let i = 0; i < 11; i++) {
+        const cell = newRow.insertCell(i);
+        const input = document.createElement("input");
         input.type = "text";
-        if (i === 9) input.readOnly = true; // 天数回来 readonly
-        if (!isEditable) input.disabled = true;
+        if (i === 9) input.readOnly = true;
+        input.addEventListener("input", () => {
+          if (!hasEditPermission) {
+            secureAction(() => {});
+            input.blur();
+          }
+        });
         cell.appendChild(input);
       }
-
-      var deleteCell = newRow.insertCell(11);
-      var deleteButton = document.createElement("button");
+      const deleteCell = newRow.insertCell(11);
+      const deleteButton = document.createElement("button");
       deleteButton.innerHTML = "Xóa";
       deleteButton.className = "deleteBtn";
-      deleteButton.onclick = function () {
-        deleteRow(newRow);
-      };
+      deleteButton.onclick = () => newRow.remove();
       deleteCell.appendChild(deleteButton);
     }
 
-    function deleteRow(row) {
-      var table = document.getElementById("materialsTable");
-      table.deleteRow(row.rowIndex);
-    }
-
     function calculateDays(row) {
-      const purchaseInput = row.cells[3].getElementsByTagName('input')[0]; // 到采购时间
-      const deliveryInput = row.cells[10].getElementsByTagName('input')[0]; // 日期货物
-      const daysCell = row.cells[9].getElementsByTagName('input')[0]; // 天数回来
+      const purchaseInput = row.cells[3].getElementsByTagName('input')[0];
+      const deliveryInput = row.cells[10].getElementsByTagName('input')[0];
+      const daysCell = row.cells[9].getElementsByTagName('input')[0];
 
       if (!purchaseInput || !daysCell) return;
 
       const today = new Date();
       const purchaseDate = new Date(purchaseInput.value);
-      const deliveryDate = deliveryInput.value ? new Date(deliveryInput.value) : null;
+      const deliveryDate = deliveryInput?.value ? new Date(deliveryInput.value) : null;
 
       if (purchaseInput.value && !isNaN(purchaseDate)) {
-        if (!deliveryDate || isNaN(deliveryDate)) {
-          const diffTime = today - purchaseDate;
-          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
-          daysCell.value = diffDays > 0 ? diffDays : 0;
-        } else {
-          const diffTime = deliveryDate - purchaseDate;
-          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
-          daysCell.value = diffDays >= 0 ? diffDays : 0;
-        }
+        const diffTime = deliveryDate && !isNaN(deliveryDate)
+          ? deliveryDate - purchaseDate
+          : today - purchaseDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+        daysCell.value = diffDays >= 0 ? diffDays : 0;
       }
     }
 
     function searchTable() {
-      var input = document.getElementById("searchInput");
-      var filter = input.value.toUpperCase();
-      var table = document.getElementById("materialsTable");
-      var tr = table.getElementsByTagName("tr");
+      const input = document.getElementById("searchInput");
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById("materialsTable");
+      const tr = table.getElementsByTagName("tr");
 
-      for (var i = 1; i < tr.length; i++) {
+      for (let i = 1; i < tr.length; i++) {
         tr[i].style.display = "none";
-        var td = tr[i].getElementsByTagName("td");
-        for (var j = 0; j < td.length - 1; j++) {
-          if (td[j]) {
-            var txtValue = td[j].textContent || td[j].innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-              tr[i].style.display = "";
-              break;
-            }
+        const td = tr[i].getElementsByTagName("td");
+        for (let j = 0; j < td.length - 1; j++) {
+          const txtValue = td[j].textContent || td[j].innerText;
+          if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+            break;
           }
         }
       }
     }
 
     function saveData() {
-      var table = document.getElementById("materialsTable");
-      var rows = table.rows;
-      var data = [];
+      const table = document.getElementById("materialsTable");
+      const rows = table.rows;
+      const data = [];
 
-      for (var i = 1; i < rows.length; i++) {
-        var row = rows[i];
-        var rowData = [];
-        for (var j = 0; j < row.cells.length - 1; j++) {
-          var input = row.cells[j].getElementsByTagName('input')[0];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const rowData = [];
+        for (let j = 0; j < row.cells.length - 1; j++) {
+          const input = row.cells[j].getElementsByTagName('input')[0];
           rowData.push(input.value);
         }
         data.push(rowData);
@@ -175,51 +230,42 @@
     }
 
     function loadData() {
-      var data = localStorage.getItem("tableData");
+      const data = localStorage.getItem("tableData");
       if (data) {
-        data = JSON.parse(data);
-        var table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
-        data.forEach(function (rowData) {
-          var newRow = table.insertRow(table.rows.length);
-          rowData.forEach(function (value, index) {
-            var cell = newRow.insertCell();
-            var input = document.createElement("input");
+        const table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
+        JSON.parse(data).forEach((rowData) => {
+          const newRow = table.insertRow();
+          rowData.forEach((value, index) => {
+            const cell = newRow.insertCell();
+            const input = document.createElement("input");
             input.type = "text";
             input.value = value;
-            if (index === 9) input.readOnly = true; // 天数回来 readonly
-            if (!isEditable) input.disabled = true;
+            if (index === 9) input.readOnly = true;
+            input.addEventListener("input", () => {
+              if (!hasEditPermission) {
+                secureAction(() => {});
+                input.blur();
+              }
+            });
             cell.appendChild(input);
           });
-
-          var deleteCell = newRow.insertCell();
-          var deleteButton = document.createElement("button");
+          const deleteCell = newRow.insertCell();
+          const deleteButton = document.createElement("button");
           deleteButton.innerHTML = "Xóa";
           deleteButton.className = "deleteBtn";
-          deleteButton.onclick = function () {
-            deleteRow(newRow);
-          };
+          deleteButton.onclick = () => newRow.remove();
           deleteCell.appendChild(deleteButton);
         });
       }
     }
 
-    // Gọi hàm khi trang tải xong
     window.onload = function () {
-      loadData();
-      // Cập nhật tự động mỗi 5 giây
-      setInterval(() => {
-        const rows = document.querySelectorAll("#materialsTable tbody tr");
-        rows.forEach(row => calculateDays(row));
-      }, 5000);
-    };
-
-    // Cập nhật khi có nhập liệu
-    document.addEventListener("input", function (e) {
-      if (e.target.tagName.toLowerCase() === 'input') {
-        var row = e.target.closest('tr');
-        if (row) calculateDays(row);
+      const savedUser = localStorage.getItem("loggedUser");
+      if (savedUser) {
+        currentUser = savedUser;
+        showMain();
       }
-    });
+    };
   </script>
 </body>
 </html>
