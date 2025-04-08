@@ -2,7 +2,6 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2025 购买材料</title>
   <style>
     table {
@@ -24,7 +23,7 @@
     }
     .deleteBtn {
       background-color: red;
-      color: rgb(255, 255, 255);
+      color: white;
       border: none;
       cursor: pointer;
       padding: 5px;
@@ -48,17 +47,11 @@
     button:hover {
       background-color: #45a049;
     }
-    /* CSS cho bảng chỉ có thể xem */
-    .view-only input {
-      background-color: #f5f5f5;
-      pointer-events: none; /* Không thể chỉnh sửa */
-    }
   </style>
 </head>
 <body>
   <h1>2025 购买材料</h1>
 
-  <!-- Tìm kiếm -->
   <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Tìm kiếm...">
 
   <table id="materialsTable">
@@ -74,12 +67,11 @@
         <th>人上单</th>
         <th>原因购买状况</th>
         <th>天数回来</th>
-        <th>日期货物</th> <!-- Cột mới cho "Ngày hàng về" -->
-        <th>操作</th> <!-- Cột xóa -->
+        <th>日期货物</th>
+        <th>操作</th>
       </tr>
     </thead>
     <tbody>
-      <!-- Dữ liệu sẽ được thêm vào đây -->
     </tbody>
   </table>
 
@@ -88,78 +80,72 @@
   <button onclick="saveData()">Lưu dữ liệu</button>
 
   <script>
-    // Biến xác định quyền chỉnh sửa
-    var isEditable = true; // Nếu là true, có thể chỉnh sửa, nếu là false, chỉ xem
+    var isEditable = true;
 
-    // Hàm để thêm một dòng mới vào bảng
     function addRow() {
       var table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
       var newRow = table.insertRow(table.rows.length);
 
-      for (var i = 0; i < 11; i++) { // Cập nhật thành 11 để bao gồm cột mới
+      for (var i = 0; i < 11; i++) {
         var cell = newRow.insertCell(i);
         var input = document.createElement("input");
         input.type = "text";
-        if (!isEditable) {
-          input.disabled = true;  // Vô hiệu hóa ô nhập nếu không có quyền chỉnh sửa
-        }
+        if (i === 9) input.readOnly = true; // 天数回来 readonly
+        if (!isEditable) input.disabled = true;
         cell.appendChild(input);
       }
 
-      // Thêm nút "Xóa" vào cột cuối
       var deleteCell = newRow.insertCell(11);
       var deleteButton = document.createElement("button");
       deleteButton.innerHTML = "Xóa";
       deleteButton.className = "deleteBtn";
-      deleteButton.onclick = function() {
+      deleteButton.onclick = function () {
         deleteRow(newRow);
       };
       deleteCell.appendChild(deleteButton);
     }
 
-    // Hàm để xóa dòng
     function deleteRow(row) {
       var table = document.getElementById("materialsTable");
       table.deleteRow(row.rowIndex);
     }
 
-    // Hàm tính toán số ngày từ ngày mua đến ngày hàng về
     function calculateDays(row) {
-      var purchaseDate = row.cells[2].getElementsByTagName('input')[0].value;
-      var deliveryDate = row.cells[10].getElementsByTagName('input')[0].value;
+      const purchaseInput = row.cells[3].getElementsByTagName('input')[0]; // 到采购时间
+      const deliveryInput = row.cells[10].getElementsByTagName('input')[0]; // 日期货物
+      const daysCell = row.cells[9].getElementsByTagName('input')[0]; // 天数回来
 
-      if (purchaseDate && deliveryDate) {
-        // Chuyển đổi chuỗi ngày thành đối tượng Date
-        var purchaseDateObj = new Date(purchaseDate);
-        var deliveryDateObj = new Date(deliveryDate);
-        
-        // Tính số ngày
-        var timeDiff = deliveryDateObj - purchaseDateObj;
-        var dayDiff = timeDiff / (1000 * 3600 * 24);
+      if (!purchaseInput || !daysCell) return;
 
-        // Đảm bảo số ngày là số nguyên dương
-        if (dayDiff >= 0) {
-          row.cells[9].getElementsByTagName('input')[0].value = dayDiff; // Cập nhật cột "天数回来"
+      const today = new Date();
+      const purchaseDate = new Date(purchaseInput.value);
+      const deliveryDate = deliveryInput.value ? new Date(deliveryInput.value) : null;
+
+      if (purchaseInput.value && !isNaN(purchaseDate)) {
+        if (!deliveryDate || isNaN(deliveryDate)) {
+          const diffTime = today - purchaseDate;
+          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+          daysCell.value = diffDays > 0 ? diffDays : 0;
+        } else {
+          const diffTime = deliveryDate - purchaseDate;
+          const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+          daysCell.value = diffDays >= 0 ? diffDays : 0;
         }
       }
     }
 
-    // Hàm để tìm kiếm và lọc dữ liệu trong bảng
     function searchTable() {
-      var input, filter, table, tr, td, i, j, txtValue;
-      input = document.getElementById("searchInput");
-      filter = input.value.toUpperCase();
-      table = document.getElementById("materialsTable");
-      tr = table.getElementsByTagName("tr");
+      var input = document.getElementById("searchInput");
+      var filter = input.value.toUpperCase();
+      var table = document.getElementById("materialsTable");
+      var tr = table.getElementsByTagName("tr");
 
-      // Lặp qua tất cả các dòng, ẩn những dòng không khớp với từ khóa tìm kiếm
-      for (i = 1; i < tr.length; i++) { // Bắt đầu từ dòng thứ 2 (dòng đầu là tiêu đề)
-        tr[i].style.display = "none"; // Ẩn dòng mặc định
-        td = tr[i].getElementsByTagName("td");
-
-        for (j = 0; j < td.length - 1; j++) { // Loại bỏ cột "操作"
+      for (var i = 1; i < tr.length; i++) {
+        tr[i].style.display = "none";
+        var td = tr[i].getElementsByTagName("td");
+        for (var j = 0; j < td.length - 1; j++) {
           if (td[j]) {
-            txtValue = td[j].textContent || td[j].innerText;
+            var txtValue = td[j].textContent || td[j].innerText;
             if (txtValue.toUpperCase().indexOf(filter) > -1) {
               tr[i].style.display = "";
               break;
@@ -169,45 +155,39 @@
       }
     }
 
-    // Hàm để lưu dữ liệu vào LocalStorage
     function saveData() {
       var table = document.getElementById("materialsTable");
       var rows = table.rows;
       var data = [];
 
-      for (var i = 1; i < rows.length; i++) { // Bắt đầu từ dòng thứ 2 (dòng đầu là tiêu đề)
+      for (var i = 1; i < rows.length; i++) {
         var row = rows[i];
         var rowData = [];
-
-        for (var j = 0; j < row.cells.length - 1; j++) { // Loại bỏ cột xóa
+        for (var j = 0; j < row.cells.length - 1; j++) {
           var input = row.cells[j].getElementsByTagName('input')[0];
           rowData.push(input.value);
         }
-
         data.push(rowData);
       }
 
-      // Lưu dữ liệu vào LocalStorage
       localStorage.setItem("tableData", JSON.stringify(data));
       alert("Dữ liệu đã được lưu!");
     }
 
-    // Hàm để tải dữ liệu từ LocalStorage (nếu có)
     function loadData() {
       var data = localStorage.getItem("tableData");
       if (data) {
         data = JSON.parse(data);
         var table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
-        data.forEach(function(rowData) {
+        data.forEach(function (rowData) {
           var newRow = table.insertRow(table.rows.length);
-          rowData.forEach(function(value) {
+          rowData.forEach(function (value, index) {
             var cell = newRow.insertCell();
             var input = document.createElement("input");
             input.type = "text";
             input.value = value;
-            if (!isEditable) {
-              input.disabled = true;  // Vô hiệu hóa ô nhập nếu không có quyền chỉnh sửa
-            }
+            if (index === 9) input.readOnly = true; // 天数回来 readonly
+            if (!isEditable) input.disabled = true;
             cell.appendChild(input);
           });
 
@@ -215,7 +195,7 @@
           var deleteButton = document.createElement("button");
           deleteButton.innerHTML = "Xóa";
           deleteButton.className = "deleteBtn";
-          deleteButton.onclick = function() {
+          deleteButton.onclick = function () {
             deleteRow(newRow);
           };
           deleteCell.appendChild(deleteButton);
@@ -223,20 +203,21 @@
       }
     }
 
-    // Gọi hàm loadData khi trang được tải
-    window.onload = loadData;
-    
-    // Gọi hàm tính toán số ngày khi người dùng nhập ngày mua hoặc ngày hàng về
-    document.addEventListener("input", function(e) {
-      // Kiểm tra xem ô nhập liệu có phải là trong bảng hay không
-      if (e.target.tagName.toLowerCase() === 'input' && e.target.type === 'text') {
-        // Lấy dòng của ô nhập liệu hiện tại
+    // Gọi hàm khi trang tải xong
+    window.onload = function () {
+      loadData();
+      // Cập nhật tự động mỗi 5 giây
+      setInterval(() => {
+        const rows = document.querySelectorAll("#materialsTable tbody tr");
+        rows.forEach(row => calculateDays(row));
+      }, 5000);
+    };
+
+    // Cập nhật khi có nhập liệu
+    document.addEventListener("input", function (e) {
+      if (e.target.tagName.toLowerCase() === 'input') {
         var row = e.target.closest('tr');
-        
-        // Kiểm tra xem dòng có tồn tại hay không (đảm bảo không gây lỗi nếu ô nhập liệu không nằm trong bảng)
-        if (row) {
-          calculateDays(row);
-        }
+        if (row) calculateDays(row);
       }
     });
   </script>
