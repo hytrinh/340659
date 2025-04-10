@@ -50,6 +50,23 @@
   </style>
 </head>
 <body>
+  <script>
+    // 禁用右键菜单
+    document.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+    });
+    
+    // 禁用 F12、Ctrl+Shift+I、Ctrl+U
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || 
+          (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+        alert("操作已被禁用！");
+        return false;
+      }
+    });
+    </script>
   <!-- Login Form -->
   <div id="loginForm">
     <h2>🔒 请输入姓名和密码</h2>
