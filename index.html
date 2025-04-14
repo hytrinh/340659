@@ -1,158 +1,132 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>2025 购买材料</title>
+  <title>2025 年購買原料</title>
   <style>
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    table, th, td {
-      border: 1px solid black;
-    }
-    th, td {
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    input {
-      width: 100%;
-    }
-    .deleteBtn {
-      background-color: red;
-      color: white;
-      border: none;
-      cursor: pointer;
-      padding: 5px;
-    }
-    input[type="text"], input[type="password"] {
-      width: 200px;
-      padding: 8px;
-      margin-bottom: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+    body { font-family: Arial; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    input[type="text"], input[type="password"], input[type="datetime-local"] {
+      padding: 6px; width: 100%; box-sizing: border-box;
     }
     button {
-      padding: 8px 16px;
-      margin: 5px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
+      padding: 8px 12px; margin: 5px; border: none;
+      background-color: #4CAF50; color: white; border-radius: 4px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #45a049;
-    }
+    button:hover { background-color: #45a049; }
+    .deleteBtn { background-color: red; }
+    #loginForm { display: block; }
+    #mainContent { display: none; }
   </style>
-</head>
-<body>
   <script>
-    // 禁用右键菜单
     document.addEventListener('contextmenu', function (e) {
       e.preventDefault();
     });
-    
-    // 禁用 F12、Ctrl+Shift+I、Ctrl+U
     document.addEventListener('keydown', function (e) {
       if (e.key === 'F12' || 
           (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || 
           (e.ctrlKey && e.key === 'U')) {
         e.preventDefault();
-        alert("操作已被禁用！");
+        alert("此功能已被禁用！");
         return false;
       }
     });
-    </script>
-  <!-- Login Form -->
+  </script>
+</head>
+<body>
+
   <div id="loginForm">
-    <h2>🔒 请输入姓名和密码</h2>
-    <input type="text" id="username" placeholder="姓名" required><br>
-    <input type="password" id="password" placeholder="密码" required><br>
-    <button onclick="checkLogin()">Đăng nhập</button>
+    <h2>🔒 登入系統</h2>
+    <input type="text" id="username" placeholder="用戶名稱" required><br><br>
+    <input type="password" id="password" placeholder="密碼" required><br><br>
+    <button onclick="checkLogin()">登入</button>
   </div>
 
-  <!-- Main Content -->
-  <div id="mainContent" style="display:none">
-    <h1>2025 购买材料</h1>
-
-    <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Tìm kiếm...">
-
-    <table id="materialsTable">
+  <!-- Nội dung chính (ẩn trước khi đăng nhập) -->
+  <div id="mainContent" style="display: none;">
+    <h2>🛠 2025 年購買原料</h2>
+    <input type="text" id="searchInput" placeholder="搜尋..." onkeyup="searchTable()">
+    <table id="reasonTable">
       <thead>
         <tr>
-          <th>月</th>
-          <th>单号</th>
-          <th>日期购买</th>
-          <th>到采购时间</th>
-          <th>请购单号</th>
-          <th>名称材料</th>
-          <th>数量</th>
-          <th>人上单</th>
-          <th>原因购买状况</th>
-          <th>天数回来</th>
-          <th>日期货物</th>
+          <th>月份</th>
+          <th>訂單編號</th>
+          <th>購買日期</th>
+          <th>到貨時間</th>
+          <th>訂單數量</th>
+          <th>原料名稱</th>
+          <th>數量</th>
+          <th>下單人</th>
+          <th>理由與狀態</th>
+          <th>退貨天數</th>
+          <th>收貨日期</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
-
-    <br>
-    <button onclick="secureAction(addRow)">Thêm dòng</button>
-    <button onclick="secureAction(saveData)">Lưu dữ liệu</button>
-    <button onclick="logout()" style="background-color: gray;">Đăng xuất</button>
+    <button onclick="secureAction(addRow)">新增一行</button>
+    <button onclick="secureAction(saveData)">保存數據</button>
+    <button onclick="logout()" style="background-color: gray;">登出</button>
   </div>
 
   <script>
-    const loginPassword = "ht1998";
-    const editPassword = "aa879094";
-    const webhookURL = "https://script.google.com/macros/s/AKfycbz3IrtQ7ZmqXXW2w19vfoRh4jhGGOp-hfmWXB_vf2X9WjsYooqfpuNGsPjGJwCSZ7S7/exec";
+    const loginPass = "ht1998";
+    const editPass = "aa8794";
+    const webhookURL = "https://script.google.com/macros/s/AKfycbxROnIHnhudRi6BrpRQo27ADKiRuMwfbUzCH6-tXCijWlsMZQ4et3nM2InH8s9jQlgX/exec";
 
     let currentUser = "";
     let hasEditPermission = false;
+    // Kiểm tra đăng nhập khi tải trang
+    window.onload = () => {
+  const u = sessionStorage.getItem("user");
+  if (u) {
+    currentUser = u;
+    document.getElementById("loginForm").style.display = "none"; // Ẩn form đăng nhập
+    document.getElementById("mainContent").style.display = "block"; // Hiển thị nội dung chính
+    loadData(); // Tải dữ liệu sau khi đăng nhập thành công
+  }
+};
 
+    // Kiểm tra đăng nhập
     function checkLogin() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
+  const name = document.getElementById("username").value.trim();
+  const pwd = document.getElementById("password").value;
 
-      if (!username) return alert("Vui lòng nhập tên");
-      if (password === loginPassword) {
-        currentUser = username;
-        localStorage.setItem("loggedUser", username);
-        sendToWebhook({ user: username, time: new Date().toLocaleString() });
-        showMain();
-      } else {
-        alert("Sai mật khẩu đăng nhập!");
-      }
-    }
+  if (!name) return alert("請輸入用戶名稱");
+  if (pwd === loginPass || pwd === editPass) {
+    currentUser = name;
+    hasEditPermission = (pwd === editPass);
+    sessionStorage.setItem("user", name);  // Lưu thông tin đăng nhập trong sessionStorage
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("mainContent").style.display = "block"; // Hiển thị nội dung chính
+    loadData();  // Tải dữ liệu sau khi đăng nhập thành công
+  } else {
+    alert("密碼錯誤！");
+  }
+}
 
-    function showMain() {
-      document.getElementById("loginForm").style.display = "none";
-      document.getElementById("mainContent").style.display = "block";
-      loadData();
-      setInterval(() => {
-        const rows = document.querySelectorAll("#materialsTable tbody tr");
-        rows.forEach(row => calculateDays(row));
-      }, 5000);
-    }
-
+    // Đăng xuất
     function logout() {
-      localStorage.removeItem("loggedUser");
-      location.reload();
+      localStorage.removeItem("user");
+      location.reload();  // Đăng xuất và tải lại trang
     }
 
+    // Hành động bảo mật (thêm dòng, lưu dữ liệu...)
     function secureAction(action) {
-      const input = prompt("🔒 Nhập mật khẩu chỉnh sửa:");
-      if (input === editPassword) {
-        hasEditPermission = true;
+      if (hasEditPermission) {
         action();
       } else {
-        alert("Sai mật khẩu chỉnh sửa!");
-        sendToWebhook({ user: currentUser, time: new Date().toLocaleString(), action: "Cố gắng chỉnh sửa sai mật khẩu" });
+        const input = prompt("🔒 請輸入編輯密碼：");
+        if (input === editPass) {
+          hasEditPermission = true;
+          action();
+        } else {
+          alert("密碼錯誤！");
+        }
       }
     }
 
@@ -165,27 +139,35 @@
     }
 
     function addRow() {
-      const table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
+      const table = document.getElementById("reasonTable").getElementsByTagName('tbody')[0];
       const newRow = table.insertRow();
-      for (let i = 0; i < 11; i++) {
-        const cell = newRow.insertCell(i);
+
+      const fields = [
+        '月份', '訂單編號', '購買日期', '到貨時間', '訂單數量', '原料名稱',
+        '數量', '下單人', '理由與狀態', '退貨天數', '收貨日期'
+      ];
+
+      for (let i = 0; i < fields.length; i++) {
+        const cell = newRow.insertCell();
         const input = document.createElement("input");
         input.type = "text";
-        if (i === 9) input.readOnly = true;
-        input.addEventListener("input", () => {
-          if (!hasEditPermission) {
-            secureAction(() => {});
-            input.blur();
-          }
-        });
+        input.placeholder = fields[i];
         cell.appendChild(input);
       }
-      const deleteCell = newRow.insertCell(11);
-      const deleteButton = document.createElement("button");
-      deleteButton.innerHTML = "Xóa";
-      deleteButton.className = "deleteBtn";
-      deleteButton.onclick = () => newRow.remove();
-      deleteCell.appendChild(deleteButton);
+
+      // 最後一列：刪除按鈕
+      const deleteCell = newRow.insertCell();
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "刪除";
+      deleteBtn.className = "deleteBtn";
+      deleteBtn.style.backgroundColor = "red";
+      deleteBtn.style.color = "white";
+      deleteBtn.onclick = function () {
+        secureAction(() => {
+          table.deleteRow(newRow.rowIndex - 1);
+        });
+      };
+      deleteCell.appendChild(deleteBtn);
     }
 
     function calculateDays(row) {
@@ -209,80 +191,76 @@
     }
 
     function searchTable() {
-      const input = document.getElementById("searchInput");
-      const filter = input.value.toUpperCase();
-      const table = document.getElementById("materialsTable");
-      const tr = table.getElementsByTagName("tr");
-
-      for (let i = 1; i < tr.length; i++) {
-        tr[i].style.display = "none";
-        const td = tr[i].getElementsByTagName("td");
-        for (let j = 0; j < td.length - 1; j++) {
-          const txtValue = td[j].textContent || td[j].innerText;
-          if (txtValue.toUpperCase().indexOf(filter) > -1) {
-            tr[i].style.display = "";
-            break;
-          }
-        }
-      }
+      const filter = document.getElementById("searchInput").value.toUpperCase();
+      const rows = document.querySelectorAll("#reasonTable tbody tr");
+      rows.forEach(row => {
+        const txt = row.innerText.toUpperCase();
+        row.style.display = txt.includes(filter) ? "" : "none";
+      });
     }
 
     function saveData() {
-      const table = document.getElementById("materialsTable");
-      const rows = table.rows;
-      const data = [];
+      const rows = document.querySelectorAll("#reasonTable tbody tr");
+      const allData = [];
 
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
+      rows.forEach(row => {
         const rowData = [];
-        for (let j = 0; j < row.cells.length - 1; j++) {
-          const input = row.cells[j].getElementsByTagName('input')[0];
-          rowData.push(input.value);
+        for (let i = 0; i < 11; i++) {
+          const val = row.cells[i].querySelector("input")?.value || "";
+          rowData.push(val);
         }
-        data.push(rowData);
-      }
+        rowData.push(currentUser);
+        allData.push(rowData);
+      });
 
-      localStorage.setItem("tableData", JSON.stringify(data));
-      alert("Dữ liệu đã được lưu!");
+      fetch(webhookURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: allData })
+      }).then(res => res.text()).then(txt => {
+        alert("數據已保存至雲端！");
+      });
     }
 
     function loadData() {
-      const data = localStorage.getItem("tableData");
-      if (data) {
-        const table = document.getElementById("materialsTable").getElementsByTagName('tbody')[0];
-        JSON.parse(data).forEach((rowData) => {
-          const newRow = table.insertRow();
-          rowData.forEach((value, index) => {
-            const cell = newRow.insertCell();
-            const input = document.createElement("input");
-            input.type = "text";
-            input.value = value;
-            if (index === 9) input.readOnly = true;
-            input.addEventListener("input", () => {
-              if (!hasEditPermission) {
-                secureAction(() => {});
-                input.blur();
-              }
+      fetch(webhookURL)
+        .then(res => res.json())
+        .then(data => {
+          const table = document.getElementById("reasonTable").getElementsByTagName('tbody')[0];
+          while (table.rows.length > 0) table.deleteRow(0); // 清除現有資料
+
+          data.forEach(obj => {
+            const row = table.insertRow();
+            Object.values(obj).forEach(value => {
+              const cell = row.insertCell();
+              cell.innerText = value || "";
             });
-            cell.appendChild(input);
+            const deleteCell = row.insertCell();
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "刪除";
+            deleteBtn.className = "deleteBtn";
+            deleteBtn.style.backgroundColor = "red";
+            deleteBtn.style.color = "white";
+            deleteBtn.onclick = function () {
+              secureAction(() => {
+                table.deleteRow(row.rowIndex);
+              });
+            };
+            deleteCell.appendChild(deleteBtn);
           });
-          const deleteCell = newRow.insertCell();
-          const deleteButton = document.createElement("button");
-          deleteButton.innerHTML = "Xóa";
-          deleteButton.className = "deleteBtn";
-          deleteButton.onclick = () => newRow.remove();
-          deleteCell.appendChild(deleteButton);
         });
-      }
     }
 
-    window.onload = function () {
-      const savedUser = localStorage.getItem("loggedUser");
-      if (savedUser) {
-        currentUser = savedUser;
-        showMain();
+    window.onload = () => {
+      const u = localStorage.getItem("user");
+      if (u) {
+        currentUser = u;
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("mainContent").style.display = "block";
+        loadData(); // 登入後載入資料
       }
     };
   </script>
+
 </body>
 </html>
