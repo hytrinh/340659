@@ -82,12 +82,12 @@
     let hasEditPermission = false;
     // Kiểm tra đăng nhập khi tải trang
     window.onload = () => {
-  const u = sessionStorage.getItem("user");
+  const u = sessionStorage.getItem("user") || localStorage.getItem("user");
   if (u) {
     currentUser = u;
-    document.getElementById("loginForm").style.display = "none"; // Ẩn form đăng nhập
-    document.getElementById("mainContent").style.display = "block"; // Hiển thị nội dung chính
-    loadData(); // Tải dữ liệu sau khi đăng nhập thành công
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("mainContent").style.display = "block";
+    loadData(); // 登入後載入資料
   }
 };
 
@@ -250,16 +250,6 @@
           });
         });
     }
-
-    window.onload = () => {
-      const u = localStorage.getItem("user");
-      if (u) {
-        currentUser = u;
-        document.getElementById("loginForm").style.display = "none";
-        document.getElementById("mainContent").style.display = "block";
-        loadData(); // 登入後載入資料
-      }
-    };
   </script>
 
 </body>
