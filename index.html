@@ -1,256 +1,322 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>2025 年購買原料</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>進度跟踪系統</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; }
-    input[type="text"], input[type="password"], input[type="datetime-local"] {
-      padding: 6px; width: 100%; box-sizing: border-box;
+    body {
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #444;
+      text-align: center;
+    }
+    th {
+      background-color: #2c2c2c;
+    }
+    input, button {
+      padding: 6px;
+      border-radius: 4px;
+      border: none;
+      margin: 4px 0;
+    }
+    input {
+      background-color: #333;
+      color: #fff;
     }
     button {
-      padding: 8px 12px; margin: 5px; border: none;
-      background-color: #4CAF50; color: white; border-radius: 4px;
+      background-color: #444;
+      color: white;
       cursor: pointer;
     }
-    button:hover { background-color: #45a049; }
-    .deleteBtn { background-color: red; }
-    #loginForm { display: block; }
-    #mainContent { display: none; }
-  </style>
-  <script>
-    document.addEventListener('contextmenu', function (e) {
-      e.preventDefault();
-    });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'F12' || 
-          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) || 
-          (e.ctrlKey && e.key === 'U')) {
-        e.preventDefault();
-        alert("此功能已被禁用！");
-        return false;
+    button:hover {
+      background-color: #666;
+    }
+    @media screen and (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
       }
-    });
-  </script>
+      tr {
+        margin-bottom: 15px;
+      }
+      td {
+        text-align: left;
+        padding-left: 50%;
+        position: relative;
+      }
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+      }
+    }
+  </style>
 </head>
 <body>
 
-  <div id="loginForm">
-    <h2>🔒 登入系統</h2>
-    <input type="text" id="username" placeholder="用戶名稱" required><br><br>
-    <input type="password" id="password" placeholder="密碼" required><br><br>
-    <button onclick="checkLogin()">登入</button>
-  </div>
+<div id="loginForm">
+  <h2>🔐 登入系統</h2>
+  <input type="text" id="username" placeholder="用戶名稱">
+  <input type="password" id="password" placeholder="密碼">
+  <button onclick="checkLogin()">登入</button>
+</div>
 
-  <!-- Nội dung chính (ẩn trước khi đăng nhập) -->
-  <div id="mainContent" style="display: none;">
-    <h2>🛠 2025 年購買原料</h2>
-    <input type="text" id="searchInput" placeholder="搜尋..." onkeyup="searchTable()">
-    <table id="reasonTable">
-      <thead>
-        <tr>
-          <th>月份</th>
-          <th>訂單編號</th>
-          <th>購買日期</th>
-          <th>到貨時間</th>
-          <th>訂單數量</th>
-          <th>原料名稱</th>
-          <th>數量</th>
-          <th>下單人</th>
-          <th>理由與狀態</th>
-          <th>退貨天數</th>
-          <th>收貨日期</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button onclick="secureAction(addRow)">新增一行</button>
-    <button onclick="secureAction(saveData)">保存數據</button>
-    <button onclick="logout()" style="background-color: gray;">登出</button>
-  </div>
+<div id="mainContent" style="display:none">
+  <h2>📦 原料進度跟踪</h2>
+  <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="🔍 搜尋...">
+  <table id="reasonTable">
+    <thead>
+      <tr>
+        <th>月份</th>
+        <th>訂單編號</th>
+        <th>購買日期</th>
+        <th>到采购時間</th>
+        <th>规格</th>
+        <th>原料名稱</th>
+        <th>數量</th>
+        <th>下單人</th>
+        <th>理由與狀態</th>
+        <th>退貨天數</th>
+        <th>到货日期</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="secureAction(addRow)">新增一行</button>
+  <button onclick="secureAction(saveData)">保存數據</button>
+  <button onclick="logout()" style="background-color: gray;">登出</button>
 
-  <script>
-    const loginPass = "ht1998";
-    const editPass = "aa8794";
-    const webhookURL = "https://script.google.com/macros/s/AKfycbxROnIHnhudRi6BrpRQo27ADKiRuMwfbUzCH6-tXCijWlsMZQ4et3nM2InH8s9jQlgX/exec";
+  <h3>📊 統計表（每月）</h3>
+  <table id="summaryTable">
+    <thead>
+      <tr><th>月份</th><th>總訂單數量</th><th>總原料數量</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
-    let currentUser = "";
-    let hasEditPermission = false;
-    // Kiểm tra đăng nhập khi tải trang
-    window.onload = () => {
+<script>
+const loginPass = "ht1998";
+const editPass = "aa8794";
+const webhookURL = "https://script.google.com/macros/s/AKfycbwF6CcKnIflu0HJPSZHOGnp3MZJQZ6XOHG578SXzg8OFPDHhR0TT7K-JgL6Zxi4W-0X/exec";
+let currentUser = "";
+let hasEditPermission = false;
+
+window.onload = () => {
   const u = sessionStorage.getItem("user") || localStorage.getItem("user");
   if (u) {
     currentUser = u;
     document.getElementById("loginForm").style.display = "none";
     document.getElementById("mainContent").style.display = "block";
-    loadData(); // 登入後載入資料
+    loadData();
   }
 };
 
-    // Kiểm tra đăng nhập
-    function checkLogin() {
+function checkLogin() {
   const name = document.getElementById("username").value.trim();
   const pwd = document.getElementById("password").value;
-
   if (!name) return alert("請輸入用戶名稱");
   if (pwd === loginPass || pwd === editPass) {
     currentUser = name;
     hasEditPermission = (pwd === editPass);
-    sessionStorage.setItem("user", name);  // Lưu thông tin đăng nhập trong sessionStorage
+    sessionStorage.setItem("user", name);
     document.getElementById("loginForm").style.display = "none";
-    document.getElementById("mainContent").style.display = "block"; // Hiển thị nội dung chính
-    loadData();  // Tải dữ liệu sau khi đăng nhập thành công
+    document.getElementById("mainContent").style.display = "block";
+    loadData();
   } else {
     alert("密碼錯誤！");
   }
 }
 
-    // Đăng xuất
-    function logout() {
-      localStorage.removeItem("user");
-      location.reload();  // Đăng xuất và tải lại trang
-    }
+function logout() {
+  localStorage.removeItem("user");
+  sessionStorage.removeItem("user");
+  location.reload();
+}
 
-    // Hành động bảo mật (thêm dòng, lưu dữ liệu...)
-    function secureAction(action) {
-      if (hasEditPermission) {
-        action();
-      } else {
-        const input = prompt("🔒 請輸入編輯密碼：");
-        if (input === editPass) {
-          hasEditPermission = true;
-          action();
-        } else {
-          alert("密碼錯誤！");
-        }
-      }
+function secureAction(action) {
+  if (hasEditPermission) {
+    action();
+  } else {
+    const input = prompt("🔒 請輸入編輯密碼：");
+    if (input === editPass) {
+      hasEditPermission = true;
+      action();
+    } else {
+      alert("密碼錯誤！");
     }
+  }
+}
 
-    function sendToWebhook(data) {
-      fetch(webhookURL, {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" }
+function addRow() {
+  const table = document.getElementById("reasonTable").getElementsByTagName('tbody')[0];
+  const newRow = table.insertRow();
+  const fields = [
+    '月份', '訂單編號', '購買日期', '到采购時間', '訂單數量',
+    '原料名稱', '數量', '下單人', '理由與狀態', '總天數', '到货日期'
+  ];
+  for (let i = 0; i < fields.length; i++) {
+    const cell = newRow.insertCell();
+    const input = document.createElement("input");
+    input.type = (fields[i].includes("日期") || fields[i].includes("時間")) ? "datetime-local" : "text";
+    input.placeholder = fields[i];
+    if (fields[i] === '月份') {
+      const now = new Date();
+      const monthText = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      input.value = monthText;
+    }
+    cell.appendChild(input);
+    if (i === 3 || i === 10) {
+      input.addEventListener("change", () => {
+        calculateDays(newRow);
       });
     }
+  }
+  const deleteCell = newRow.insertCell();
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "刪除";
+  deleteBtn.className = "deleteBtn";
+  deleteBtn.style.backgroundColor = "red";
+  deleteBtn.style.color = "white";
+  deleteBtn.onclick = function () {
+    secureAction(() => {
+      table.deleteRow(newRow.rowIndex - 1);
+    });
+  };
+  deleteCell.appendChild(deleteBtn);
+}
 
-    function addRow() {
+function calculateDays(row) {
+  const purchaseInput = row.cells[3].querySelector("input");
+  const deliveryInput = row.cells[10].querySelector("input");
+  const daysInput = row.cells[9].querySelector("input");
+
+  if (!purchaseInput || !deliveryInput || !daysInput) return;
+
+  const purchaseDate = new Date(purchaseInput.value);
+  const deliveryDate = new Date(deliveryInput.value || new Date());
+
+  if (isNaN(purchaseDate.getTime()) || isNaN(deliveryDate.getTime())) return;
+
+  const diffTime = deliveryDate - purchaseDate;
+  const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
+  daysInput.value = diffDays >= 0 ? diffDays : 0;
+}
+function searchTable() {
+  const filter = document.getElementById("searchInput").value.toUpperCase();
+  const rows = document.querySelectorAll("#reasonTable tbody tr");
+  rows.forEach(row => {
+    const txt = row.innerText.toUpperCase();
+    row.style.display = txt.includes(filter) ? "" : "none";
+  });
+}
+
+function saveData() {
+  const rows = document.querySelectorAll("#reasonTable tbody tr");
+  const allData = [];
+
+  rows.forEach(row => {
+    const rowData = [];
+    for (let i = 0; i < 11; i++) {
+      const val = row.cells[i].querySelector("input")?.value || "";
+      rowData.push(val);
+    }
+    rowData.push(currentUser);
+    allData.push(rowData);
+  });
+
+  fetch(webhookURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: allData })
+  })
+  .then(res => res.text())
+  .then(txt => {
+    alert("數據已保存至雲端！");
+  })
+  .catch(error => {
+    console.error("Lỗi khi gửi dữ liệu:", error);
+    alert("Lỗi khi lưu dữ liệu: " + error.message);
+  });
+}
+function loadData() {
+  fetch(webhookURL)
+    .then(res => res.json())
+    .then(data => {
       const table = document.getElementById("reasonTable").getElementsByTagName('tbody')[0];
-      const newRow = table.insertRow();
+      while (table.rows.length > 0) table.deleteRow(0); // Xóa tất cả các hàng cũ
 
-      const fields = [
-        '月份', '訂單編號', '購買日期', '到貨時間', '訂單數量', '原料名稱',
-        '數量', '下單人', '理由與狀態', '退貨天數', '收貨日期'
-      ];
+      data.forEach((obj) => {
+        const row = table.insertRow();
+        Object.values(obj).forEach((value, index) => {
+          const cell = row.insertCell();
+          const input = document.createElement("input");
+          input.type = (index === 2 || index === 3 || index === 10) ? "datetime-local" : "text";
+          input.value = value || "";
+          input.placeholder = "請輸入";
+          input.style.backgroundColor = "#333";
+          input.style.color = "#fff";
+          input.style.border = "none";
+          cell.appendChild(input);
 
-      for (let i = 0; i < fields.length; i++) {
-        const cell = newRow.insertCell();
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = fields[i];
-        cell.appendChild(input);
-      }
-
-      // 最後一列：刪除按鈕
-      const deleteCell = newRow.insertCell();
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "刪除";
-      deleteBtn.className = "deleteBtn";
-      deleteBtn.style.backgroundColor = "red";
-      deleteBtn.style.color = "white";
-      deleteBtn.onclick = function () {
-        secureAction(() => {
-          table.deleteRow(newRow.rowIndex - 1);
-        });
-      };
-      deleteCell.appendChild(deleteBtn);
-    }
-
-    function calculateDays(row) {
-      const purchaseInput = row.cells[3].getElementsByTagName('input')[0];
-      const deliveryInput = row.cells[10].getElementsByTagName('input')[0];
-      const daysCell = row.cells[9].getElementsByTagName('input')[0];
-
-      if (!purchaseInput || !daysCell) return;
-
-      const today = new Date();
-      const purchaseDate = new Date(purchaseInput.value);
-      const deliveryDate = deliveryInput?.value ? new Date(deliveryInput.value) : null;
-
-      if (purchaseInput.value && !isNaN(purchaseDate)) {
-        const diffTime = deliveryDate && !isNaN(deliveryDate)
-          ? deliveryDate - purchaseDate
-          : today - purchaseDate;
-        const diffDays = Math.ceil(diffTime / (1000 * 3600 * 24));
-        daysCell.value = diffDays >= 0 ? diffDays : 0;
-      }
-    }
-
-    function searchTable() {
-      const filter = document.getElementById("searchInput").value.toUpperCase();
-      const rows = document.querySelectorAll("#reasonTable tbody tr");
-      rows.forEach(row => {
-        const txt = row.innerText.toUpperCase();
-        row.style.display = txt.includes(filter) ? "" : "none";
-      });
-    }
-
-    function saveData() {
-      const rows = document.querySelectorAll("#reasonTable tbody tr");
-      const allData = [];
-
-      rows.forEach(row => {
-        const rowData = [];
-        for (let i = 0; i < 11; i++) {
-          const val = row.cells[i].querySelector("input")?.value || "";
-          rowData.push(val);
-        }
-        rowData.push(currentUser);
-        allData.push(rowData);
-      });
-
-      fetch(webhookURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: allData })
-      }).then(res => res.text()).then(txt => {
-        alert("數據已保存至雲端！");
-      });
-    }
-
-    function loadData() {
-      fetch(webhookURL)
-        .then(res => res.json())
-        .then(data => {
-          const table = document.getElementById("reasonTable").getElementsByTagName('tbody')[0];
-          while (table.rows.length > 0) table.deleteRow(0); // 清除現有資料
-
-          data.forEach(obj => {
-            const row = table.insertRow();
-            Object.values(obj).forEach(value => {
-              const cell = row.insertCell();
-              cell.innerText = value || "";
+          if (index === 3 || index === 10) {
+            input.addEventListener("change", () => {
+              calculateDays(row); // Tính toán số ngày khi thay đổi ngày
             });
-            const deleteCell = row.insertCell();
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "刪除";
-            deleteBtn.className = "deleteBtn";
-            deleteBtn.style.backgroundColor = "red";
-            deleteBtn.style.color = "white";
-            deleteBtn.onclick = function () {
-              secureAction(() => {
-                table.deleteRow(row.rowIndex);
-              });
-            };
-            deleteCell.appendChild(deleteBtn);
-          });
+          }
         });
-    }
-  </script>
 
+        const deleteCell = row.insertCell();
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "刪除";
+        deleteBtn.className = "deleteBtn";
+        deleteBtn.style.backgroundColor = "red";
+        deleteBtn.style.color = "white";
+        deleteBtn.onclick = function () {
+          secureAction(() => {
+            table.deleteRow(row.rowIndex);
+          });
+        };
+        deleteCell.appendChild(deleteBtn);
+      });
+
+      generateSummary(data); // Cập nhật bảng tóm tắt
+    })
+    .catch(error => {
+      console.error("Lỗi khi tải dữ liệu:", error);
+      alert("Không thể tải dữ liệu!");
+    });
+}
+
+function generateSummary(data) {
+  const summary = {};
+  data.forEach(row => {
+    const month = row[0];
+    const orderQty = Number(row[4]) || 0;
+    const materialQty = Number(row[6]) || 0;
+    if (!summary[month]) summary[month] = { orders: 0, materials: 0 };
+    summary[month].orders += orderQty;
+    summary[month].materials += materialQty;
+  });
+  const tbody = document.getElementById("summaryTable").querySelector("tbody");
+  tbody.innerHTML = "";
+  for (const [month, values] of Object.entries(summary)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${month}</td><td>${values.orders}</td><td>${values.materials}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+</script>
 </body>
 </html>
